@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Public_Sans } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/providers/convex-client-provider";
 
-const publicSans = Public_Sans({ subsets: ['latin'], variable: '--font-sans' });
+const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
