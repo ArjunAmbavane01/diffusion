@@ -27,6 +27,7 @@ export const createAuth = (
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+      minPasswordLength: 4,
     },
     socialProviders: {
       google: {

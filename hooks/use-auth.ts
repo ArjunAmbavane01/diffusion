@@ -1,3 +1,5 @@
+"use client"
+
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth/auth-client";
@@ -8,6 +10,7 @@ import z from "zod";
 export const useAuth = () => {
 
     const [isAuthPending, startAuthTransition] = useTransition();
+    const [isLoggingOut, startLogoutTransition] = useTransition();
     const [isGoogleAuthPending, startGoogleAuthTransition] = useTransition();
 
     const router = useRouter();
@@ -19,7 +22,7 @@ export const useAuth = () => {
                 password: data.password,
                 fetchOptions: {
                     onSuccess: () => {
-                        router.push("/");
+                        router.push("/dashboard");
                     },
                     onError: (err) => {
                         toast.error(err.error.message);
@@ -37,7 +40,7 @@ export const useAuth = () => {
                 password: data.password,
                 fetchOptions: {
                     onSuccess: () => {
-                        router.push("/");
+                        router.push("/dashboard");
                     },
                     onError: (err) => {
                         toast.error(err.error.message);
@@ -52,20 +55,28 @@ export const useAuth = () => {
             try {
                 await authClient.signIn.social({
                     provider: "google",
-                    callbackURL: "/dashboard",
-                    fetchOptions: {
-                        onSuccess: () => {
-                            router.push("/");
-                        },
-                        onError: (err) => {
-                            toast.error(err.error.message);
-                        },
-                    },
+                    callbackURL: "/dashboard"
                 });
             } catch (err: unknown) {
                 toast.error(err instanceof Error ? err.message : "Something went wrong")
             }
         })
+    }
+
+    const handleLogout = async () => {
+        startLogoutTransition(async () => {
+            await authClient.signOut({
+                fetchOptions: {
+                    onSuccess: () => {
+                        toast.success("Logged out successfully");
+                        router.push("/");
+                    },
+                    onError: (err) => {
+                        toast.error(err.error.message);
+                    }
+                },
+            });
+        });
     }
 
     return {
@@ -75,7 +86,9 @@ export const useAuth = () => {
         startGoogleAuthTransition,
         handleLogin,
         handleSignUp,
-        signInWithGoogle
+        signInWithGoogle,
+        isLoggingOut,
+        handleLogout
     }
 
 }

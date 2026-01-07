@@ -1,5 +1,6 @@
-import { isAuthenticated } from "@/lib/auth/auth-server"
 import { redirect } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth/auth-server"
+import Navbar from "@/components/web/navbar/navbar";
 
 export default async function DashboardPage() {
 
@@ -7,8 +8,8 @@ export default async function DashboardPage() {
     if (!session) redirect("/auth/login");
 
     return (
-        <div>
-            User Dashboard
-        </div>
+        <>
+            <Navbar />
+        </>
     )
 }
