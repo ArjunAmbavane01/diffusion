@@ -28,6 +28,13 @@ export const createAuth = (
       enabled: true,
       requireEmailVerification: false,
     },
+    socialProviders: {
+      google: {
+        prompt: "select_account",
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      },
+    },
     plugins: [
       // The Convex plugin is required for Convex compatibility
       convex({ authConfig }),

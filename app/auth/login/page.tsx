@@ -1,29 +1,21 @@
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
+import { useAuth } from "@/hooks/use-auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { authClient } from "@/lib/auth/auth-client";
 import { loginSchema } from "@/lib/schemas/auth.schema";
-import { handleGoogleAuth } from "@/lib/auth/googleAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import z from "zod";
 
 export default function LoginPage() {
 
-  const [isAuthPending, startAuthTransition] = useTransition();
-  const [isGoogleAuthPending, startGoogleAuthTransition] = useTransition();
-
-  const router = useRouter();
+  const { handleLogin,signInWithGoogle, isAuthPending, isGoogleAuthPending } = useAuth();
 
   const form = useForm({
     resolver: zodResolver(loginSchema),
@@ -33,24 +25,6 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof loginSchema>) => {
-    startAuthTransition(async () => {
-      await authClient.signIn.email({
-        email: data.email,
-        password: data.password,
-        fetchOptions: {
-          onSuccess: () => {
-            form.reset();
-            router.push("/");
-          },
-          onError: (err) => {
-            toast.error(err.error.message);
-          },
-        },
-      });
-    });
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -58,7 +32,7 @@ export default function LoginPage() {
         <CardDescription>Create an account to get started</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(handleLogin)}>
           <FieldGroup>
             <Controller
               name="email"
@@ -122,7 +96,7 @@ export default function LoginPage() {
             </h6>
           </Separator>
           <Button
-            onClick={()=>handleGoogleAuth(startGoogleAuthTransition)}
+            onClick={() => signInWithGoogle()}
             variant={"outline"}
             size={"lg"}
             disabled={isGoogleAuthPending}

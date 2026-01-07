@@ -1,11 +1,9 @@
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
-import { authClient } from "@/lib/auth/auth-client";
+import { useAuth } from "@/hooks/use-auth";
 import { signUpSchema } from "@/lib/schemas/auth.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -14,16 +12,10 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
-import z from "zod";
-import { handleGoogleAuth } from "@/lib/auth/googleAuth";
 
 export default function SignUpPage() {
-  
-  const [isAuthPending, startAuthTransition] = useTransition();
-  const [isGoogleAuthPending, startGoogleAuthTransition] = useTransition();
 
-  const router = useRouter();
+  const { handleSignUp, signInWithGoogle, isAuthPending, isGoogleAuthPending } = useAuth();
 
   const form = useForm({
     resolver: zodResolver(signUpSchema),
@@ -34,25 +26,6 @@ export default function SignUpPage() {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof signUpSchema>) => {
-    startAuthTransition(async () => {
-      await authClient.signUp.email({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        fetchOptions: {
-          onSuccess: () => {
-            form.reset();
-            router.push("/");
-          },
-          onError: (err) => {
-            toast.error(err.error.message);
-          },
-        },
-      });
-    });
-  };
-
   return (
     <Card>
       <CardHeader>
@@ -60,7 +33,7 @@ export default function SignUpPage() {
         <CardDescription>Create an account to get started</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(handleSignUp)}>
           <FieldGroup className="gap-y-4">
             <Controller
               name="name"
@@ -141,7 +114,7 @@ export default function SignUpPage() {
             </h6>
           </Separator>
           <Button
-            onClick={()=>handleGoogleAuth(startGoogleAuthTransition)}
+            onClick={() => signInWithGoogle()}
             variant={"outline"}
             size={"lg"}
             disabled={isGoogleAuthPending}
