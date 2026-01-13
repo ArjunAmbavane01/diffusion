@@ -7,7 +7,7 @@ export default function Navbar() {
   return (
     <nav className='flex place-items-center fixed top-0 inset-x-0 w-full h-16 px-5 bg-sidebar/80 backdrop-blur-md border-b z-50'>
       <div className='flex justify-between items-center size-full max-w-7xl mx-auto'>
-        <h3 className="text-xl tracking-wider"><span className="text-primary">D</span>iffusion</h3>
+        <h3 className="text-xl"><span className="text-primary">D</span>iffusion</h3>
         <div className='flex items-center gap-2 h-full'>
           <div className='flex items-center gap-3'>
             <ModeToggle />
