@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth/auth-server"
 import Navbar from "@/components/web/navbar/navbar";
-import Dashboard from "./_components/dashboard";
+import Dashboard from "@/components/web/dashboard/dashboard";
 
 export default async function DashboardPage() {
 
