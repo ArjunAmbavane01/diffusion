@@ -5,15 +5,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ReactSketchCanvas, ReactSketchCanvasRef } from 'react-sketch-canvas';
-import { toast } from 'sonner';
 import { z } from "zod";
 import {
     Card,
     CardContent,
-    CardDescription,
     CardFooter,
-    CardHeader,
-    CardTitle,
 } from "@/components/ui/card"
 import {
     Field,
@@ -25,6 +21,12 @@ import { Button } from '@/components/ui/button';
 import { Eraser, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from 'next-themes';
+import { fetchMutation } from 'convex/nextjs';
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
+import { toast } from 'sonner';
+import { fetchAuthMutation } from '@/lib/auth/auth-server';
+import { useMutation } from 'convex/react';
 
 export default function GenerationPanel() {
 
@@ -42,8 +44,35 @@ export default function GenerationPanel() {
         },
     })
 
-    function onSubmit() {
-        toast.success("Prompt submitted")
+    const generateUploadUrl = useMutation(api.generations.generateImageUploadUrl);
+    const createGeneration = useMutation(api.generations.createGeneration);
+
+    const onSubmit = async (formData: z.infer<typeof promptSchema>) => {
+        if (!canvasRef.current) return;
+        try {
+            const canvasDataUrl = await canvasRef.current.exportImage('jpeg');
+            const uploadUrl = await generateUploadUrl();
+            const imageBlob = await fetch(canvasDataUrl).then(r => r.blob());
+
+            const uploadRes = await fetch(uploadUrl, {
+                method: "POST",
+                body: imageBlob
+            });
+
+            if (!uploadRes.ok) throw new Error("Image upload failed. Please try again");
+
+            const { storageId } = await uploadRes.json() as {
+                storageId: Id<"_storage">
+            };;
+
+            await createGeneration({
+                prompt: formData.prompt,
+                canvasImageStorageId: storageId,
+            });
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Some unexpected error occured. Please try again"
+            toast.error(errorMessage);
+        }
     }
 
     const canvasRef = useRef<ReactSketchCanvasRef>(null);
