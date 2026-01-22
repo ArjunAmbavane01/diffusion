@@ -37,6 +37,9 @@ export default function GenerationPanel() {
         setMounted(true);
     }, []);
 
+    const generateUploadUrl = useMutation(api.generations.generateImageUploadUrl);
+    const createGeneration = useMutation(api.generations.createGeneration);
+
     const form = useForm<z.infer<typeof promptSchema>>({
         resolver: zodResolver(promptSchema),
         defaultValues: {
@@ -44,31 +47,27 @@ export default function GenerationPanel() {
         },
     })
 
-    const generateUploadUrl = useMutation(api.generations.generateImageUploadUrl);
-    const createGeneration = useMutation(api.generations.createGeneration);
-
     const onSubmit = async (formData: z.infer<typeof promptSchema>) => {
         if (!canvasRef.current) return;
         try {
             const canvasDataUrl = await canvasRef.current.exportImage('jpeg');
-            const uploadUrl = await generateUploadUrl();
+            const imageUploadUrl = await generateUploadUrl();
             const imageBlob = await fetch(canvasDataUrl).then(r => r.blob());
 
-            const uploadRes = await fetch(uploadUrl, {
+            const uploadRes = await fetch(imageUploadUrl, {
                 method: "POST",
                 body: imageBlob
             });
 
             if (!uploadRes.ok) throw new Error("Image upload failed. Please try again");
 
-            const { storageId } = await uploadRes.json() as {
-                storageId: Id<"_storage">
-            };;
+            const { storageId } = await uploadRes.json() as { storageId: Id<"_storage"> };
 
             await createGeneration({
                 prompt: formData.prompt,
                 canvasImageStorageId: storageId,
             });
+
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : "Some unexpected error occured. Please try again"
             toast.error(errorMessage);

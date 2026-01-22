@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { generationStatus } from "./validators";
 
 export default defineSchema({
     generations: defineTable({
@@ -7,11 +8,8 @@ export default defineSchema({
         prompt: v.string(),
         canvasImageStorageId: v.id("_storage"),
         resultImageStorageId: v.optional(v.id("_storage")),
-        status: v.union(
-            v.literal("queued"),
-            v.literal("processing"),
-            v.literal("completed"),
-            v.literal("failed"),
-        ),
+        status: generationStatus,
+        createdAt: v.number(),
+        updatedAt: v.number()
     }).index("by_user", ["userId"])
 })
