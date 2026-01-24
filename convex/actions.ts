@@ -36,16 +36,9 @@ export const runGeneration = internalAction({
             const input = {
                 image: `data:image/jpeg;base64,${canvasImageBase64}`,
                 prompt: args.prompt,
-                num_samples: "1",
                 image_resolution: "512",
-                detect_resolution: "512",
-                ddim_steps: "20",
-                guess_mode: "no",
                 strength: "1",
-                scale: "9",
-                seed: "-1",
-                eta: "0",
-                a_prompt: "best quality, extremely detailed",
+                scale: 7,
                 n_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality",
             };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
 import { Loader2, AlertCircle, Image as ImageIcon, Info, Trash2 } from "lucide-react";
@@ -8,10 +8,28 @@ import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Id } from "@/convex/_generated/dataModel";
+import { toast } from "sonner";
 
 export default function ImageGallery() {
-    let generations = useQuery(api.generations.getUserGenerations);
+    const generations = useQuery(api.generations.getUserGenerations);
+    const deleteGeneration = useMutation(api.generations.deleteGeneration);
+
     const [hoveredId, setHoveredId] = useState<string | null>(null);
+    const [deletingId, setDeletingId] = useState<Id<"generations"> | null>(null);
+
+    const handleDelete = async (id: Id<"generations">) => {
+        try {
+            setDeletingId(id);
+            await deleteGeneration({ id });
+            toast.success("Generation deleted successfully");
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to delete generation";
+            toast.error(errorMessage);
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     if (generations === undefined) {
         return (
@@ -126,12 +144,15 @@ export default function ImageGallery() {
                                         <Button
                                             variant={"destructive"}
                                             size={"icon"}
-                                            onClick={() => {
-                                                console.log("Delete", gen._id);
-                                            }}
+                                            onClick={() => handleDelete(gen._id)}
+                                            disabled={deletingId === gen._id}
                                             className="rounded-sm opacity-0 group-hover:opacity-100"
                                         >
-                                            <Trash2 className="size-4" />
+                                            {deletingId === gen._id ? (
+                                                <Spinner className="size-4" />
+                                            ) : (
+                                                <Trash2 className="size-4" />
+                                            )}
                                         </Button>
                                     </div>
                                 )}

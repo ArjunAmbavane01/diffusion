@@ -61,3 +61,23 @@ export const getUserGenerations = query({
         );
     },
 });
+
+export const deleteGeneration = mutation({
+    args: { id: v.id("generations") },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new ConvexError("User not authenticated");
+
+        const generation = await ctx.db.get(args.id);
+
+        if (!generation) throw new ConvexError("Generation not found");
+        if (generation.userId !== user._id) throw new ConvexError("Unauthorized to delete this generation");
+
+        // Delete stored images
+        if (generation.canvasImageStorageId) await ctx.storage.delete(generation.canvasImageStorageId);
+        if (generation.resultImageStorageId) await ctx.storage.delete(generation.resultImageStorageId);
+
+        // Delete generation record
+        await ctx.db.delete(args.id);
+    },
+});
