@@ -2,9 +2,10 @@ import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { generationStatus } from "./validators";
+import Replicate from "replicate";
 
 export const runGeneration = internalAction({
-    args: { generationId: v.id("generations") },
+    args: { generationId: v.id("generations"), prompt: v.string() },
     handler: async (ctx, args) => {
 
         await ctx.runMutation(internal.actions.updateStatus, {
@@ -15,15 +16,64 @@ export const runGeneration = internalAction({
             id: args.generationId,
         });
 
-        // TODO: call your LLM / image model here
-        // const resultBuffer = await callModel(gen.prompt, gen.canvasImageStorageId)
+        if (!gen) throw new Error("Generation not found");
 
-        // await ctx.storage.store(resultBuffer) → resultStorageId
+        try {
 
-        await ctx.runMutation(internal.actions.updateStatus, {
-            id: args.generationId,
-            status: "completed",
-        });
+            const canvasImageUrl = await ctx.storage.getUrl(gen.canvasImageStorageId);
+            if (!canvasImageUrl) throw new Error("Canvas image not found");
+            console.log("Fetched generation:", gen._id);
+            // Fetch the canvas image
+            const canvasImageResponse = await fetch(canvasImageUrl);
+            const canvasImageBuffer = await canvasImageResponse.arrayBuffer();
+            const canvasImageBase64 = btoa(
+                String.fromCharCode(...new Uint8Array(canvasImageBuffer))
+            );
+
+            const replicate = new Replicate({
+                auth: process.env.REPLICATE_API_TOKEN,
+            });
+
+            const input = {
+                image: `data:image/jpeg;base64,${canvasImageBase64}`,
+                prompt: "a 19th century portrait of a raccoon gentleman wearing a suit"
+            };
+
+            console.log("Calling Replicate...")
+            const output = await replicate.run("jagilley/controlnet-scribble:435061a1b5a4c1e26740464bf786efdfa9cb3a3ac488595a2de23e143fdb0117", { input });
+
+            const arr = output as unknown as { url: () => string }[];
+            const resultUrl = arr[1].url();
+
+            console.log("Result URL:", resultUrl);
+
+            // fetch result image
+            const res = await fetch(resultUrl);
+            const buffer = await res.arrayBuffer();
+
+            const bytes = new Uint8Array(buffer);
+
+            const resultStorageId = await ctx.storage.store(
+                new Blob([bytes], { type: res.headers.get("content-type") ?? "image/png" })
+            );
+
+            await ctx.runMutation(internal.actions.saveResult, {
+                id: args.generationId,
+                resultImageStorageId: resultStorageId,
+                status: "completed"
+            });
+            console.log("Stored to Convex:", resultStorageId);
+
+        } catch (err: unknown) {
+            console.error("runGeneration failed:", err);
+
+            await ctx.runMutation(internal.actions.updateStatus, {
+                id: args.generationId,
+                status: "failed",
+            });
+
+            throw err;
+        }
     },
 })
 
@@ -43,5 +93,20 @@ export const getGeneration = internalQuery({
     args: { id: v.id("generations") },
     handler: async (ctx, args) => {
         return await ctx.db.get(args.id);
+    },
+});
+
+export const saveResult = internalMutation({
+    args: {
+        id: v.id("generations"),
+        resultImageStorageId: v.id("_storage"),
+        status: generationStatus
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.id, {
+            resultImageStorageId: args.resultImageStorageId,
+            updatedAt: Date.now(),
+            status: args.status,
+        });
     },
 });
