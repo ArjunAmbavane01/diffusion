@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { authComponent } from "./auth";
 import { internal } from "./_generated/api";
@@ -22,10 +22,8 @@ export const createGeneration = mutation({
         // run llm action
         await ctx.scheduler.runAfter(0, internal.actions.runGeneration, {
             generationId: createGenerationId,
-            prompt:args.prompt
+            prompt: args.prompt
         })
-
-        // return createGenerationId;
     },
 })
 
@@ -36,5 +34,30 @@ export const generateImageUploadUrl = mutation({
         if (!user) throw new ConvexError("User not authenticated");
 
         return await ctx.storage.generateUploadUrl();
+    },
+});
+
+export const getUserGenerations = query({
+    args: {},
+    handler: async (ctx) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new ConvexError("User not authenticated");
+
+        const generations = await ctx.db
+            .query("generations")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .order("desc")
+            .collect();
+
+        // Get URLs for images
+        return await Promise.all(
+            generations.map(async (gen) => ({
+                ...gen,
+                canvasImageUrl: await ctx.storage.getUrl(gen.canvasImageStorageId),
+                resultImageUrl: gen.resultImageStorageId
+                    ? await ctx.storage.getUrl(gen.resultImageStorageId)
+                    : null,
+            }))
+        );
     },
 });

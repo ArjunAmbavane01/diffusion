@@ -21,11 +21,9 @@ import { Button } from '@/components/ui/button';
 import { Eraser, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from 'next-themes';
-import { fetchMutation } from 'convex/nextjs';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
-import { fetchAuthMutation } from '@/lib/auth/auth-server';
 import { useMutation } from 'convex/react';
 
 export default function GenerationPanel() {

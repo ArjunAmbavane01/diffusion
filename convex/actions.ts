@@ -22,7 +22,6 @@ export const runGeneration = internalAction({
 
             const canvasImageUrl = await ctx.storage.getUrl(gen.canvasImageStorageId);
             if (!canvasImageUrl) throw new Error("Canvas image not found");
-            console.log("Fetched generation:", gen._id);
             // Fetch the canvas image
             const canvasImageResponse = await fetch(canvasImageUrl);
             const canvasImageBuffer = await canvasImageResponse.arrayBuffer();
@@ -31,12 +30,23 @@ export const runGeneration = internalAction({
             );
 
             const replicate = new Replicate({
-                auth: process.env.REPLICATE_API_TOKEN,
+                auth: process.env.REPLICATE_API_TOKEN!,
             });
 
             const input = {
                 image: `data:image/jpeg;base64,${canvasImageBase64}`,
-                prompt: "a 19th century portrait of a raccoon gentleman wearing a suit"
+                prompt: args.prompt,
+                num_samples: "1",
+                image_resolution: "512",
+                detect_resolution: "512",
+                ddim_steps: "20",
+                guess_mode: "no",
+                strength: "1",
+                scale: "9",
+                seed: "-1",
+                eta: "0",
+                a_prompt: "best quality, extremely detailed",
+                n_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality",
             };
 
             console.log("Calling Replicate...")
@@ -50,12 +60,9 @@ export const runGeneration = internalAction({
             // fetch result image
             const res = await fetch(resultUrl);
             const buffer = await res.arrayBuffer();
-
             const bytes = new Uint8Array(buffer);
 
-            const resultStorageId = await ctx.storage.store(
-                new Blob([bytes], { type: res.headers.get("content-type") ?? "image/png" })
-            );
+            const resultStorageId = await ctx.storage.store(new Blob([bytes]));
 
             await ctx.runMutation(internal.actions.saveResult, {
                 id: args.generationId,
