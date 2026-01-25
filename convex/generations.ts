@@ -13,7 +13,7 @@ export const createGeneration = mutation({
         const createGenerationId = await ctx.db.insert("generations", {
             prompt: args.prompt,
             canvasImageStorageId: args.canvasImageStorageId,
-            status: "queued",
+            status: "processing",
             userId: user._id,
             createdAt: Date.now(),
             updatedAt: Date.now(),
@@ -24,6 +24,8 @@ export const createGeneration = mutation({
             generationId: createGenerationId,
             prompt: args.prompt
         })
+
+        return createGenerationId;
     },
 })
 

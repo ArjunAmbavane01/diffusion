@@ -8,10 +8,6 @@ export const runGeneration = internalAction({
     args: { generationId: v.id("generations"), prompt: v.string() },
     handler: async (ctx, args) => {
 
-        await ctx.runMutation(internal.actions.updateStatus, {
-            id: args.generationId,
-            status: "processing"
-        })
         const gen = await ctx.runQuery(internal.actions.getGeneration, {
             id: args.generationId,
         });
@@ -29,26 +25,24 @@ export const runGeneration = internalAction({
                 String.fromCharCode(...new Uint8Array(canvasImageBuffer))
             );
 
+
             const replicate = new Replicate({
                 auth: process.env.REPLICATE_API_TOKEN!,
             });
 
             const input = {
-                image: `data:image/jpeg;base64,${canvasImageBase64}`,
-                prompt: args.prompt,
+                image: `data:image/png;base64,${canvasImageBase64}`,
+                prompt: `${args.prompt}, high quality illustration, rich details, professional concept art, cinematic lighting, expressive style`,
+                negative_prompt: "wrong anatomy, extra limbs, wrong pose, low quality, blurry",
                 image_resolution: "512",
-                strength: "1",
-                scale: 7,
-                n_prompt: "longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality",
+                scale: 12,
+                strength: 0.1,
             };
 
-            console.log("Calling Replicate...")
-            const output = await replicate.run("jagilley/controlnet-scribble:435061a1b5a4c1e26740464bf786efdfa9cb3a3ac488595a2de23e143fdb0117", { input });
+            const output = await replicate.run("jagilley/controlnet-canny:aff48af9c68d162388d230a2ab003f68d2638d88307bdaf1c2f1ac95079c9613", { input });
 
             const arr = output as unknown as { url: () => string }[];
             const resultUrl = arr[1].url();
-
-            console.log("Result URL:", resultUrl);
 
             // fetch result image
             const res = await fetch(resultUrl);
@@ -62,7 +56,6 @@ export const runGeneration = internalAction({
                 resultImageStorageId: resultStorageId,
                 status: "completed"
             });
-            console.log("Stored to Convex:", resultStorageId);
 
         } catch (err: unknown) {
             console.error("runGeneration failed:", err);

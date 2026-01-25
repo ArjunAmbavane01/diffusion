@@ -74,13 +74,11 @@ export default function ImageGallery() {
                             onMouseLeave={() => setHoveredId(null)}
                         >
                             <div className="relative aspect-square bg-muted">
-                                {gen.status === "processing" && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm z-20">
-                                        <Loader2 className="size-10 animate-spin text-primary mb-3" />
-                                        <p className="text-sm font-medium">Generating...</p>
-                                        <div className="w-32 h-1 bg-muted rounded-full mt-3 overflow-hidden">
-                                            <div className="h-full bg-primary rounded-full animate-pulse w-2/3" />
-                                        </div>
+                                {(gen.status === "processing" || (gen.status === "completed" && !gen.resultImageUrl)) && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm z-20">
+                                        <Loader2 className="size-10 animate-spin text-primary relative z-10" />
+                                        <p className="text-sm font-medium mt-4">Creating magic...</p>
+                                        <p className="text-xs text-muted-foreground mt-1 animate-pulse">This may take some seconds</p>
                                     </div>
                                 )}
 
@@ -97,7 +95,7 @@ export default function ImageGallery() {
                                 )}
 
                                 {/* Canvas Image (background) */}
-                                {gen.canvasImageUrl && (
+                                {(gen.status === "processing" || gen.status === "queued") && gen.canvasImageUrl && (
                                     <Image
                                         src={gen.canvasImageUrl}
                                         alt="Canvas sketch"
