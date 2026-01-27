@@ -10,6 +10,7 @@ export default defineSchema({
         resultImageStorageId: v.optional(v.id("_storage")),
         status: generationStatus,
         createdAt: v.number(),
-        updatedAt: v.number()
+        updatedAt: v.number(),
+        isSaved: v.optional(v.boolean()),
     }).index("by_user", ["userId"])
 })

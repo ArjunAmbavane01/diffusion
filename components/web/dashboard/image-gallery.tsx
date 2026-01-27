@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card } from "@/components/ui/card";
-import { Loader2, AlertCircle, Image as ImageIcon, Info, Trash2 } from "lucide-react";
+import { Loader2, AlertCircle, Image as ImageIcon, Info, Trash2, Heart } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 export default function ImageGallery() {
     const generations = useQuery(api.generations.getUserGenerations);
     const deleteGeneration = useMutation(api.generations.deleteGeneration);
+    const toggleSave = useMutation(api.generations.toggleSave);
 
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<Id<"generations"> | null>(null);
@@ -28,6 +29,14 @@ export default function ImageGallery() {
             toast.error(errorMessage);
         } finally {
             setDeletingId(null);
+        }
+    };
+
+    const handleToggleSave = async (id: Id<"generations">, currentSavedState: boolean) => {
+        try {
+            await toggleSave({ id });
+        } catch (error) {
+            toast.error("Failed to update");
         }
     };
 
@@ -139,6 +148,22 @@ export default function ImageGallery() {
 
                                 {(gen.status === "completed" || gen.status === "failed") && (
                                     <div className="absolute top-3 right-3 flex gap-2 items-center z-40">
+                                        <Button
+                                            variant={"ghost"}
+                                            size={"icon"}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleToggleSave(gen._id, gen.isSaved || false);
+                                            }}
+                                            className="rounded-sm bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <Heart
+                                                className={`size-4 transition-all ${gen.isSaved
+                                                    ? "fill-red-500 text-red-500"
+                                                    : "text-muted-foreground"
+                                                    }`}
+                                            />
+                                        </Button>
                                         <Button
                                             variant={"destructive"}
                                             size={"icon"}
