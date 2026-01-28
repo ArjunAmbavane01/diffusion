@@ -12,5 +12,7 @@ export default defineSchema({
         createdAt: v.number(),
         updatedAt: v.number(),
         isSaved: v.optional(v.boolean()),
-    }).index("by_user", ["userId"])
+    })
+    .index("by_user", ["userId"])
+    .index("by_user_saved", ["userId", "isSaved", "createdAt"])
 })

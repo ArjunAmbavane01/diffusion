@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { ConvexError, v } from "convex/values";
 import { authComponent } from "./auth";
 import { internal } from "./_generated/api";
+import { paginationOptsValidator } from "convex/server";
 
 export const createGeneration = mutation({
     args: { prompt: v.string(), canvasImageStorageId: v.id("_storage") },
@@ -35,7 +36,6 @@ export const generateImageUploadUrl = mutation({
     handler: async (ctx) => {
         const user = await authComponent.safeGetAuthUser(ctx);
         if (!user) throw new ConvexError("User not authenticated");
-
         return await ctx.storage.generateUploadUrl();
     },
 });
@@ -53,6 +53,64 @@ export const getUserGenerations = query({
             .collect();
 
         // Get URLs for images
+        return await Promise.all(
+            generations.map(async (gen) => ({
+                ...gen,
+                canvasImageUrl: await ctx.storage.getUrl(gen.canvasImageStorageId),
+                resultImageUrl: gen.resultImageStorageId
+                    ? await ctx.storage.getUrl(gen.resultImageStorageId)
+                    : null,
+            }))
+        );
+    },
+});
+
+export const getUserGenerationsPaginated = query({
+    args: {
+        paginationOpts: paginationOptsValidator,
+    },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new ConvexError("User not authenticated");
+
+        const result = await ctx.db
+            .query("generations")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .order("desc")
+            .paginate(args.paginationOpts);
+
+        // Get URLs for images in the current page
+        const page = await Promise.all(
+            result.page.map(async (gen) => ({
+                ...gen,
+                canvasImageUrl: await ctx.storage.getUrl(gen.canvasImageStorageId),
+                resultImageUrl: gen.resultImageStorageId
+                    ? await ctx.storage.getUrl(gen.resultImageStorageId)
+                    : null,
+            }))
+        );
+
+        return {
+            ...result,
+            page,
+        };
+    },
+});
+
+export const getRecentGenerations = query({
+    args: { limit: v.optional(v.number()) },
+    handler: async (ctx, args) => {
+        const user = await authComponent.safeGetAuthUser(ctx);
+        if (!user) throw new ConvexError("User not authenticated");
+
+        const limit = args.limit ?? 20;
+
+        const generations = await ctx.db
+            .query("generations")
+            .withIndex("by_user", (q) => q.eq("userId", user._id))
+            .order("desc")
+            .take(limit);
+
         return await Promise.all(
             generations.map(async (gen) => ({
                 ...gen,
@@ -110,8 +168,9 @@ export const getSavedGenerations = query({
 
         const generations = await ctx.db
             .query("generations")
-            .withIndex("by_user", (q) => q.eq("userId", user._id))
-            .filter((q) => q.eq(q.field("isSaved"), true))
+            .withIndex("by_user_saved", (q) => 
+                q.eq("userId", user._id).eq("isSaved", true)
+            )
             .order("desc")
             .collect();
 
