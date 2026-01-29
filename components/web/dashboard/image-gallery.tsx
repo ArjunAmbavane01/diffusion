@@ -2,11 +2,8 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Card } from "@/components/ui/card";
-import { Loader2, AlertCircle, Image as ImageIcon, Info, Trash2, Heart } from "lucide-react";
-import Image from "next/image";
+import { Image as ImageIcon} from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
@@ -29,7 +26,6 @@ export default function ImageGallery() {
         }
     );
 
-    // Optimistic update for delete - instant removal from UI
     const deleteGeneration = useMutation(api.generations.deleteGeneration).withOptimisticUpdate(
         (localStore, args) => {
             const currentGenerations = localStore.getQuery(api.generations.getUserGenerations);
@@ -73,7 +69,7 @@ export default function ImageGallery() {
         );
     }
 
-    if (generations.length === 0) {
+    if (generationCount === 0) {
         return (
             <div className="col-span-2 flex items-center justify-center h-full">
                 <div className="flex flex-col items-center gap-4 ">
@@ -90,7 +86,7 @@ export default function ImageGallery() {
             <div className="pb-3 border-b border-border/50">
                 <h2 className="text-xl tracking-tight">Your Gallery</h2>
                 <p className="text-muted-foreground text-sm mt-1">
-                    {generations.length} {generations.length === 1 ? "creation" : "creations"}
+                    {generationCount} {generationCount === 1 ? "creation" : "creations"}
                 </p>
             </div>
 
