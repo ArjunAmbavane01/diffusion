@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import { Id } from "@/convex/_generated/dataModel";
-import { AlertCircle, Heart, Loader2, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { AlertCircle, Download, Heart, Loader2, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 
 export const ImageCard = memo(function ImageCard({
     generation: gen,
@@ -11,13 +13,18 @@ export const ImageCard = memo(function ImageCard({
     onHover,
     onDelete,
     onToggleSave,
+    onDownload,
 }: {
     generation: any;
     isHovered: boolean;
     onHover: (id: string | null) => void;
     onDelete: (id: Id<"generations">) => void;
     onToggleSave: (id: Id<"generations">) => void;
+    onDownload: (id: Id<"generations">, url: string, prompt: string) => Promise<void>;
 }) {
+
+    const [isDownloading, setIsDownloading] = useState(false);
+
     const formattedDate = useMemo(
         () =>
             new Date(gen.createdAt).toLocaleDateString("en-US", {
@@ -42,6 +49,20 @@ export const ImageCard = memo(function ImageCard({
         [gen._id, onToggleSave]
     );
     const handleDeleteClick = useCallback(() => onDelete(gen._id), [gen._id, onDelete]);
+    const handleDownloadClick = useCallback(
+        async (e: React.MouseEvent) => {
+            e.stopPropagation();
+            if (gen.resultImageUrl && !isDownloading) {
+                setIsDownloading(true);
+                try {
+                    await onDownload(gen._id, gen.resultImageUrl, gen.prompt);
+                } finally {
+                    setIsDownloading(false);
+                }
+            }
+        },
+        [gen._id, gen.resultImageUrl, gen.prompt, onDownload, isDownloading]
+    );
 
     return (
         <Card
@@ -119,10 +140,24 @@ export const ImageCard = memo(function ImageCard({
                             className="rounded-sm bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                             <Heart
-                                className={`size-4 transition-all ${
+                                className={cn(
+                                    "size-4 transition-all",
                                     gen.isSaved ? "fill-red-500 text-red-500" : "text-muted-foreground"
-                                }`}
+                                )}
                             />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleDownloadClick}
+                            className="rounded-sm bg-background/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                            disabled={!gen.resultImageUrl || isDownloading}
+                        >
+                            {isDownloading ? (
+                                <Spinner className="size-4 text-muted-foreground" />
+                            ) : (
+                                <Download className="size-4 text-muted-foreground" />
+                            )}
                         </Button>
                         <Button
                             variant="destructive"

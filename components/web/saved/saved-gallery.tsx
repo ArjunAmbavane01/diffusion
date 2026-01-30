@@ -56,6 +56,26 @@ export default function SavedGallery() {
         }
     }, [toggleSave]);
 
+    const handleDownload = useCallback(async (id: Id<"generations">, url: string, prompt: string) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `${prompt.slice(0, 50).replace(/[^a-z0-9]/gi, '_')}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            toast.success("Image downloaded successfully");
+        } catch (error) {
+            toast.error("Failed to download image");
+        }
+    }, []);
+
     const savedGenerationsCount = useMemo(() => savedGenerations?.length ?? 0, [savedGenerations?.length]);
 
     if (savedGenerations === undefined) {
@@ -98,6 +118,7 @@ export default function SavedGallery() {
                         onHover={setHoveredId}
                         onDelete={handleDelete}
                         onToggleSave={handleToggleSave}
+                        onDownload={handleDownload}
                     />
                 ))}
             </div>

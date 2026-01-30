@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Image as ImageIcon} from "lucide-react";
+import { Image as ImageIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { Id } from "@/convex/_generated/dataModel";
@@ -56,6 +56,26 @@ export default function ImageGallery() {
         }
     }, [toggleSave]);
 
+    const handleDownload = useCallback(async (id: Id<"generations">, url: string, prompt: string) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `${prompt.slice(0, 50).replace(/[^a-z0-9]/gi, '_')}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            toast.success("Image downloaded successfully");
+        } catch (error) {
+            toast.error("Failed to download image");
+        }
+    }, []);
+
     const generationCount = useMemo(() => generations?.length ?? 0, [generations?.length]);
 
     if (generations === undefined) {
@@ -101,6 +121,7 @@ export default function ImageGallery() {
                             onHover={setHoveredId}
                             onDelete={handleDelete}
                             onToggleSave={handleToggleSave}
+                            onDownload={handleDownload}
                         />
                     ))}
                 </div>
