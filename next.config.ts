@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "neighborly-porcupine-134.convex.cloud"
+      },
+      {
+        protocol: "https",
+        hostname: "moonlit-bloodhound-827.convex.cloud"
       }
     ]
   },
