@@ -33,13 +33,16 @@ export const runGeneration = internalAction({
             const input = {
                 image: `data:image/png;base64,${canvasImageBase64}`,
                 prompt: `${args.prompt}, high quality illustration, rich details, professional concept art, cinematic lighting, expressive style`,
-                negative_prompt: "wrong anatomy, extra limbs, wrong pose, low quality, blurry",
+                negative_prompt: "wrong anatomy, extra limbs, wrong pose, low quality, blurry, messy, chaotic, distorted",
                 image_resolution: "512",
-                scale: 12,
-                strength: 0.1,
+                scale: 9,
+                strength: 0.7,
             };
 
-            const output = await replicate.run("jagilley/controlnet-canny:aff48af9c68d162388d230a2ab003f68d2638d88307bdaf1c2f1ac95079c9613", { input });
+            const output = await replicate.run(
+                "jagilley/controlnet-canny:aff48af9c68d162388d230a2ab003f68d2638d88307bdaf1c2f1ac95079c9613",
+                { input }
+            );
 
             const arr = output as unknown as { url: () => string }[];
             const resultUrl = arr[1].url();
